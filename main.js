@@ -31,7 +31,7 @@ class Producto {
   function buscarProveedorAlternativo(producto){
     return new Promise((resolve, reject)=>{
       setTimeout(() => {
-        if(producto.proveedorAlternativo.includes("True")){
+        if(producto.proveedorAlternativo){
           resolve(10);
         }else {
           reject(new Error(`No se consiguio el producto: ${producto.nombre}, con el proveedor alternativo.`));
@@ -70,13 +70,13 @@ class Producto {
   //Zona de errores
       try{
         for(const ITEM_ of pedido.productos){
-          var productoSolo = this.obtenerProducto(ITEM_.nombre);
+          let productoSolo = this.obtenerProducto(ITEM_.nombre);
           if(!productoSolo || productoSolo.cantidad < ITEM_.cantidad){
             const cantidadExtra = await buscarProveedorAlternativo({
               nombre: ITEM_.nombre,
-              proveedorAlternativo: productoSolo ? productoSolo.proveedorAlternativo : "True"});
+              proveedorAlternativo: productoSolo ? productoSolo.proveedorAlternativo : true});
             if(!productoSolo){
-              productoSolo = new Producto(ITEM_.nombre, "Desconocida", cantidadExtra, "True");
+              productoSolo = new Producto(ITEM_.nombre, "Desconocida", cantidadExtra, true);
               this.agregarProducto(productoSolo);
             }else{
               productoSolo.actualizarCantidad(productoSolo.cantidad + cantidadExtra);
@@ -113,8 +113,8 @@ class Producto {
 
   async function asincronia(){
     const inventario = new Inventario();
-    const producto1 = new Producto("Redragon", "Tecnologia", 8, "True");
-    const producto2 = new Producto("Logitech", "Tecnologia", 8, "False");
+    const producto1 = new Producto("Redragon", "Tecnologia", 8, true);
+    const producto2 = new Producto("Logitech", "Tecnologia", 8, false);
     inventario.agregarProducto(producto1);
     const pedidoElkin = new Pedido("Elkin", [
       { nombre: "Logitech", cantidad: 7 },//Cantidad de productos solicitados, puede variar
