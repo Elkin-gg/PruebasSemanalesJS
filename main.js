@@ -24,11 +24,14 @@ class Producto {
     cancelar(){
       this.estado = "cancelado";
     }
+    mostrarNombreProducto(){
+      return (this.productos[0].nombre);
+    }
   }
   function buscarProveedorAlternativo(producto){
     return new Promise((resolve, reject)=>{
       setTimeout(() => {
-        if(producto.proveedorAlternativo && producto.proveedorAlternativo.includes("True")){
+        if(producto.proveedorAlternativo.includes("True")){
           resolve(10);
         }else {
           reject(new Error(`No se consiguio el producto: ${producto.nombre}, con el proveedor alternativo.`));
@@ -67,7 +70,7 @@ class Producto {
   //Zona de errores
       try{
         for(const ITEM_ of pedido.productos){
-          let productoSolo = this.obtenerProducto(ITEM_.nombre);
+          var productoSolo = this.obtenerProducto(ITEM_.nombre);
           if(!productoSolo || productoSolo.cantidad < ITEM_.cantidad){
             const cantidadExtra = await buscarProveedorAlternativo({
               nombre: ITEM_.nombre,
@@ -101,9 +104,9 @@ class Producto {
   
     //Historial de los pedidos
     mostrarHistorial(){
-      console.log('Historial de pedidos:');
+      console.log("Historial de pedidos:");
       for (const pedido of this.historial) {
-        console.log(`Cliente: ${pedido.cliente}, Estado: ${pedido.estado}!`);
+        console.log(`Cliente: ${pedido.cliente}, Estado: ${pedido.estado}! con su producto ${pedido.mostrarNombreProducto()}`);
       }
     }
   }
@@ -126,4 +129,3 @@ class Producto {
     inventario.mostrarHistorial();
   }
 asincronia();
-  
