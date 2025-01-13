@@ -5,7 +5,7 @@ const listaMesas=[
     {id: 4, capacidad: 5, estado: true},
     {id: 5, capacidad: 8, estado: true}
 ];
-//Esta funcion verifica si se supera o no el limite de indices de las mesas.
+//Esta funcion verifica si se supera o no el limite de indices de las mesas, y verifica si esta disponible la mesa
 function ocuparDesocupar(idMesa){
     if(idMesa >= 0 && idMesa < listaMesas.length) {  
         listaMesas[idMesa].estado = false;
