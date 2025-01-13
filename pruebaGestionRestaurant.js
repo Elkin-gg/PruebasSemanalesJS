@@ -1,27 +1,35 @@
-//creamos la clase menu para el restaurante.
+const listaMesas = [
+    {id: 1, capacidad: 4, estado: true},
+    {id: 2, capacidad: 5, estado: true},
+    {id: 3, capacidad: 6, estado: true},
+    {id: 4, capacidad: 5, estado: true},
+    {id: 5, capacidad: 8, estado: true}
+];
+//Esta funcion verifica si se supera o no el limite de indices de las mesas.
+function ocuparDesocupar(idMesa) {
+    if (idMesa >= 0 && idMesa < listaMesas.length) {  
+        listaMesas[idMesa].estado = false;
+    } else {
+        console.error("Índice de mesa no válido:", idMesa);
+    }
+}
+//listas
 const historialUsuariosReservas = [];
+const listaMenus = [];
+
+//Seccion de clases---->>>
+
+//Esta es la clase que representa menu
 class Menu {
-    constructor(nombre,cantidad,precio) {
+    constructor(nombre, cantidad, precio) {
         this.nombre = nombre;
         this.cantidad = cantidad;
         this.precio = precio;
     }
 }
-//creamos la clase de la mesa con los metodos necesarios.
-class Mesa  {
-    constructor(id, capacidad) {
-        this.id = id;
-        this.capacidad = capacidad;
-        this.estado = "libre";//predefinimos el estado por defecto de la mesa
-    }
-    ocupar(){
-        this.estado = "ocupada";
-    }
-    liberar(){
-        this.estado = "libre";
-    }
-}
-//creamos la clase que va representar cliente
+
+//clase que representa a cliente
+
 class Cliente {
     constructor(nombre, cantPersonas, menuSeleccionado) {
         this.nombre = nombre;
@@ -31,117 +39,138 @@ class Cliente {
         this.estadoReserva = "pendiente";
         this.fechaReserva = new Date();
     }
+    
+    alterarMesa(posicion) {
+        this.mesaAsignada = posicion;
+        listaMesas[posicion].estado = false;
+    }
 }
-//creamos la lista de menus.
-const listaMenus = [];
-//Agregamos lso elementos a la lista
-listaMenus.push(new Menu("Arroz chino", 4, 13));
-listaMenus.push(new Menu("Pollo asado", 7, 12));
-listaMenus.push(new Menu("Sancocho", 16, 21));
+//clase que representa a mesa
+class Mesa {
+    constructor(id, capacidad) {
+        this.id = id;
+        this.capacidad = capacidad;
+    }
+}
+//Seccion de funciones---->>>
 
-//lista para agregar las mesas
-const listaMesas = [];
-//Zona de las funciones
+//Este agrega una nueva mesa, solo en caso de que no hayan disponibles con la capacidad solicitada
+function agregarMesa(nuevoId, capacidad) {
+    const nuevaMesa = new Mesa(nuevoId, capacidad);
+    listaMesas.push(nuevaMesa);
+    return nuevoId;
+}
+
 function mostrarEstadoMesas() {
     console.log("Estado de las mesas:");
-    console.table(listaMesas.map(mesa=>({
-        Id : mesa.id,
-        capacidad : mesa.capacidad,
-        estado : mesa.estado
-    })))
+    console.table(listaMesas.map(mesa => ({
+        Id: mesa.id,
+        capacidad: mesa.capacidad,
+        estado: mesa.estado
+    })));
 }
-
-//funcion para mostrar el historial de las reservas
 
 function mostrarHistorial() {
     console.log("Cargando historial de reservas...");
-    return new Promise((resolve)=>{
+    return new Promise((resolve) => {
         setTimeout(() => {
             resolve(historialUsuariosReservas);
         }, 3000);
-    })
+    });
 }
-function agregarMesa(id, capacidad = 4) {
-    const nuevaMesa = new Mesa(id, capacidad);
-    listaMesas.push(nuevaMesa);
-}
-//con el for agregamos la cantidad de mesas disponibles, la podemos variar
-for(let i = 0; i<=5; i++){
-    agregarMesa(i, 4);
-}
-//si vamos agregar mesas de diferentes cantidades es solo jugar con la logica del for
-
-//para almacenar el registro de las reservas, el historial
 
 function verificarMesasDisponibles(cantPersonas) {
-    return new Promise((resolve)=>{
+    return new Promise((resolve) => {
         setTimeout(() => {
-            //vamos a usar directamente un booleano
-            resolve(listaMesas.find(mesa=>mesa.estado === "libre" && mesa.capacidad >= cantPersonas) || null); //en caso de no consiga    
+            let mesaValida = null;
+
+            mesaValida = listaMesas.find(mesa => mesa.estado === true && mesa.capacidad >= cantPersonas);
+
+            if (!mesaValida) {
+               
+                agregarMesa(listaMesas.length + 1, cantPersonas);
+                resolve({ nuevaMesa: true, idMesa: listaMesas.length });
+            } else {
+               
+                resolve({ nuevaMesa: false, idMesa: mesaValida.id });
+            }
         }, 3000);
-    })
+    });
 }
- async function procesarReserva(cliente) {
+
+
+async function procesarReserva(cliente) {
     try {
-        console.log(`Procesando reserva... para: ${cliente.nombre} (${cliente.cantPersonas}) con el menu "${cliente.menuSeleccionado}"`)
-    //esperando para verificar si las mesas estan disponibles
+        console.log(`Procesando reserva... para: ${cliente.nombre} (${cliente.cantPersonas}) con el menu "${cliente.menuSeleccionado}"`);
+        
+        
+        const { nuevaMesa, idMesa } = await verificarMesasDisponibles(cliente.cantPersonas);
 
-    let mesa = await verificarMesasDisponibles(cliente.cantPersonas);//este nos retorna true o false dependiendo si se cumple la condicion
+        let mesaAsignada = idMesa;
 
-    if(!mesa){
-        const nuevoId = listaMesas.length +1;
-        agregarMesa(nuevoId, 4);;
-        mesa = listaMesas.find(m => m.id === nuevoId);
-        throw new Error(`No hay mesas disponibles para ${cliente.cantPersonas} personas, agregando una nueva mesa... ID: ${nuevoId} y capacidad de 4 para ${cliente.nombre}`);
+        if (nuevaMesa) {
+            cliente.mesaAsignada = mesaAsignada;  
+            console.log(`Mesa nueva asignada: ${mesaAsignada} para ${cliente.nombre} (${cliente.cantPersonas})`);
+        } else {
+           
+            const mesa = listaMesas.find(mesa => mesa.id === mesaAsignada);
+            if (mesa && !mesa.estado) {
+                
+                mesaAsignada = listaMesas.find(mesa => mesa.estado === true && mesa.capacidad >= cliente.cantPersonas).id;
+                console.log(`Mesa ${mesa.id} está ocupada. Se le asignará la mesa ${mesaAsignada}.`);
+            }
+            cliente.mesaAsignada = mesaAsignada;  
+            console.log(`Mesa asignada: ${mesaAsignada} para ${cliente.nombre} (${cliente.cantPersonas})`);
+        }
 
-        //buscar si está disponible el plato en el menu, usando minusculas para evitar las complicaciones
-    }
-    const menu = listaMenus.find(m => m.nombre.toLowerCase() === cliente.menuSeleccionado.toLowerCase());
-    if(!menu){
-        cliente.estadoReserva = "cancelada";
-        throw new Error(`Menu "${cliente.menuSeleccionado}" no está disponible. Reserva cancelada."`)
-    }else{
-        cliente.mesaAsignada = mesa.id;
-        mesa.ocupar();
+     
+        const menu = listaMenus.find(m => m.nombre.toLowerCase() === cliente.menuSeleccionado.toLowerCase());
+        if (!menu) {
+            cliente.estadoReserva = "cancelada";
+            throw new Error(`Menu "${cliente.menuSeleccionado}" no está disponible. Reserva cancelada.`);
+        }
 
+        
+        ocuparDesocupar(cliente.mesaAsignada);
         cliente.estadoReserva = "completado";
 
-        console.log(`Reserva completada: ${cliente.nombre} ha reservado la mesa ${mesa.id} con el menu "${menu.nombre}"`);
+        console.log(`Reserva completada: ${cliente.nombre} ha reservado la mesa ${cliente.mesaAsignada} con el menu "${menu.nombre}"`);
 
-        //agregar el pedido al historial de los pedidos
+       
         historialUsuariosReservas.push({
             cliente: cliente.nombre,
-            cantPersonas : cliente.cantPersonas,
-            menuSeleccionado : cliente.menuSeleccionado,
-            mesaAsignada : cliente.mesaAsignada,
-            estadoReserva : cliente.estadoReserva,
-            fechaReserva : cliente.fechaReserva,
-        })
+            cantPersonas: cliente.cantPersonas,
+            menuSeleccionado: cliente.menuSeleccionado,
+            mesaAsignada: cliente.mesaAsignada,
+            estadoReserva: cliente.estadoReserva,
+            fechaReserva: cliente.fechaReserva,
+        });
+        
         console.table(historialUsuariosReservas);
-     
-    }
+
     } catch (error) {
         console.error(error.message);
-    }finally{
-        
     }
-    
 }
-//flujo principal del programa
+
+
 listaMenus.push(new Menu("Pizza", 2, 18));
-console.log("Nuevo menú agregado: Pizza");
+listaMenus.push(new Menu("Arroz", 3, 18));
+listaMenus.push(new Menu("Pasta", 7, 18));
+listaMenus.push(new Menu("Carne", 5, 18));
+listaMenus.push(new Menu("Sopa", 9, 18));
 
 mostrarEstadoMesas();
 
-const cliente1 = new Cliente("Elkin", 3, "Arriz chino"); 
-const cliente2 = new Cliente("Andrey", 3, "sancocho"); 
-const cliente3 = new Cliente("Gil", 3, "pollo asado");
+const cliente1 = new Cliente("Elkin", 7, "Arroz");
+const cliente2 = new Cliente("Andrey", 9, "Soppa");
+const cliente3 = new Cliente("Gil", 3, "Carne");
+
 procesarReserva(cliente1);
 procesarReserva(cliente2);
 procesarReserva(cliente3);
 
-//agregando el nuevo alimento al menu
-
 mostrarHistorial();
+
 
 
